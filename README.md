@@ -1,15 +1,14 @@
-# Portraint Segmentation
+# Portrait Segmentation with PyTorch U-Net
 
-一个基于 PyTorch U-Net 的轻量级人像分割项目，用于从人像图片中预测前景人物的二值 mask。
+A lightweight PyTorch implementation of U-Net for binary portrait segmentation.
+The model predicts a foreground mask for portrait images and can be used as a simple baseline for human/portrait segmentation experiments.
 
-> Note: 仓库名沿用了历史拼写 `Portraint_segmentation`。如果后续希望项目更规范，可以在 GitHub 上改名为 `Portrait_segmentation` 或 `portrait-segmentation`。
+## Highlights
 
-## Features
-
-- 使用 U-Net 编码器-解码器结构进行二值分割。
-- 内置 360 对样例图片与 mask，便于快速跑通训练流程。
-- 支持自定义图片目录、mask 目录、训练轮数、batch size、学习率和模型保存路径。
-- 支持加载训练后的 checkpoint，对单张图片输出二值 mask。
+- U-Net encoder-decoder architecture for binary segmentation.
+- 360 sample image/mask pairs for quickly running the training pipeline.
+- Configurable image directory, mask directory, epochs, batch size, learning rate, image size, and checkpoint path.
+- Single-image inference script that saves a binary mask.
 
 ## Preview
 
@@ -28,27 +27,29 @@
 ├── picture/
 │   ├── source360/      # 360 sample input images
 │   └── mask360/        # 360 sample binary masks
-├── DATASET.md          # Dataset layout and release notes
+├── DATASET.md          # Dataset layout and usage notes
 ├── requirements.txt    # Python dependencies
 └── LICENSE             # MIT license for source code
 ```
 
-## Requirements
+## Installation
 
 - Python 3.9+
 - PyTorch
 - torchvision
 - Pillow
 
-Install dependencies:
+Clone the repository and install dependencies:
 
 ```bash
+git clone https://github.com/ecoreal/pytorch-portrait-segmentation.git
+cd pytorch-portrait-segmentation
 pip install -r requirements.txt
 ```
 
 If you need a CUDA-specific PyTorch build, install `torch` and `torchvision` following the official PyTorch command for your CUDA version, then install the remaining dependencies.
 
-## Dataset Format
+## Dataset Layout
 
 The training code expects source images and masks to share the same file stem:
 
@@ -57,20 +58,21 @@ picture/source360/example.png
 picture/mask360/example.png
 ```
 
-Supported image suffixes are `.jpg`, `.jpeg`, `.png`, `.bmp`, and `.webp`. Masks are loaded as grayscale images and converted to binary tensors during training.
+Supported image suffixes are `.jpg`, `.jpeg`, `.png`, `.bmp`, and `.webp`.
+Masks are loaded as grayscale images and converted to binary tensors during training.
 
 ## Train
 
-Run with the bundled sample dataset:
+Train with the bundled sample dataset:
 
 ```bash
-python train.py --epochs 10 --batch-size 4 --output model.pth
+python3 train.py --epochs 10 --batch-size 4 --output model.pth
 ```
 
 Use a custom dataset:
 
 ```bash
-python train.py \
+python3 train.py \
   --image-dir /path/to/images \
   --mask-dir /path/to/masks \
   --epochs 30 \
@@ -88,10 +90,10 @@ The saved checkpoint contains:
 
 ## Predict
 
-After training, generate a binary mask for one image:
+After training, generate a binary mask for a single image:
 
 ```bash
-python predict.py picture/source360/003ff269-1cec-4ec5-8782-a9566afbe05f.png model.pth --output output_mask.png
+python3 predict.py picture/source360/003ff269-1cec-4ec5-8782-a9566afbe05f.png model.pth --output output_mask.png
 ```
 
 Optional flags:
@@ -99,11 +101,11 @@ Optional flags:
 - `--image-size`: override the inference resize size.
 - `--threshold`: foreground threshold, default `0.5`.
 
-## Notes
+## Limitations
 
-- The current implementation is intentionally simple and is suitable as a learning baseline or small-data experiment.
-- The bundled dataset is small, so model quality will depend heavily on data diversity, annotation quality, augmentation, and training schedule.
-- Generated files such as `model.pth`, prediction outputs, virtual environments, and Python cache files are ignored by `.gitignore`.
+- This repository is a compact baseline rather than a production segmentation system.
+- The bundled sample dataset is small, so model quality depends heavily on additional data, annotation quality, augmentation, and training schedule.
+- No pretrained checkpoint is included. Train a model first before running inference.
 
 ## Roadmap
 
