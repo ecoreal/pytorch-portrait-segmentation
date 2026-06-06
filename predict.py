@@ -1,42 +1,67 @@
-# import torch
-# from torchvision import transforms
-# from PIL import Image
-# import model
-
-# def predict(image_path, model_path):
-#     # 加载模型，进行预测
-#     pass
-
+import argparse
+from pathlib import Path
 
 import torch
-from torchvision import transforms
+import torch.nn.functional as F
 from PIL import Image
+from torchvision.transforms import InterpolationMode
+from torchvision.transforms import functional as TF
+
 import model
 
-def predict(image_path, model_path):
-    # 设定设备
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run portrait segmentation with a trained U-Net checkpoint.")
+    parser.add_argument("image", help="Input portrait image.")
+    parser.add_argument("model", help="Path to a checkpoint produced by train.py.")
+    parser.add_argument("--output", default="output_mask.png", help="Output mask path.")
+    parser.add_argument("--image-size", type=int, default=None, help="Override inference size in pixels.")
+    parser.add_argument("--threshold", type=float, default=0.5, help="Foreground probability threshold.")
+    return parser.parse_args()
+
+
+def load_checkpoint(model_path, device):
+    checkpoint = torch.load(model_path, map_location=device)
+    if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+        return checkpoint["model_state_dict"], checkpoint.get("image_size", 256)
+
+    return checkpoint, 256
+
+
+def predict(image_path, model_path, output_path, image_size=None, threshold=0.5):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    # 加载模型
-    net = model.Net().to(device)
-    net.load_state_dict(torch.load(model_path, map_location=device))
-    net.eval()  # 设置为评估模式
-    
-    # 图像转换：根据训练时的设置调整
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),  # 假设使用224x224像素
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # ImageNet的均值和标准差
-    ])
-    
-    # 加载图像并应用转换
-    image = Image.open(image_path)
-    image = transform(image).unsqueeze(0).to(device)  # 增加一个批次维度并转移到设备上
-    
-    # 进行预测
-    with torch.no_grad():  # 不计算梯度
-        output = net(image)
-        _, predicted = torch.max(output, 1)  # 获取最大概率的类别
-    
-    # 返回类别索引
-    return predicted.item()
+
+    state_dict, checkpoint_image_size = load_checkpoint(model_path, device)
+    image_size = image_size or checkpoint_image_size
+
+    net = model.UNet(n_class=1).to(device)
+    net.load_state_dict(state_dict)
+    net.eval()
+
+    image = Image.open(image_path).convert("RGB")
+    original_size = (image.height, image.width)
+    resized = TF.resize(image, (image_size, image_size), interpolation=InterpolationMode.BILINEAR)
+    tensor = TF.to_tensor(resized).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        logits = net(tensor)
+        logits = F.interpolate(logits, size=original_size, mode="bilinear", align_corners=False)
+        probability = torch.sigmoid(logits)[0, 0].cpu()
+        mask = (probability >= threshold).float()
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    TF.to_pil_image(mask).save(output_path)
+    return output_path
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    saved_path = predict(
+        image_path=args.image,
+        model_path=args.model,
+        output_path=args.output,
+        image_size=args.image_size,
+        threshold=args.threshold,
+    )
+    print(f"Mask saved to {saved_path}")
