@@ -1,14 +1,16 @@
 # Portrait Segmentation with PyTorch U-Net
 
-A lightweight PyTorch implementation of U-Net for binary portrait segmentation.
-The model predicts a foreground mask for portrait images and can be used as a simple baseline for human/portrait segmentation experiments.
+[English](README.md) | [简体中文](README.zh-CN.md)
+
+A lightweight PyTorch implementation of U-Net for binary portrait segmentation. This project provides a compact training and inference pipeline for predicting foreground masks from portrait images, making it suitable as a baseline for portrait segmentation, human segmentation, and related computer vision experiments.
 
 ## Highlights
 
-- U-Net encoder-decoder architecture for binary segmentation.
-- 360 sample image/mask pairs for quickly running the training pipeline.
-- Configurable image directory, mask directory, epochs, batch size, learning rate, image size, and checkpoint path.
-- Single-image inference script that saves a binary mask.
+- Implements a U-Net encoder-decoder network for binary image segmentation.
+- Includes 360 sample image/mask pairs for quickly validating the training workflow.
+- Supports configurable dataset paths, epochs, batch size, learning rate, image size, and checkpoint output.
+- Provides a single-image inference script for generating binary portrait masks.
+- Keeps the codebase small and easy to inspect for learning, experimentation, and extension.
 
 ## Preview
 
@@ -16,23 +18,27 @@ The model predicts a foreground mask for portrait images and can be used as a si
 | --- | --- |
 | ![source](picture/source360/003ff269-1cec-4ec5-8782-a9566afbe05f.png) | ![mask](picture/mask360/003ff269-1cec-4ec5-8782-a9566afbe05f.png) |
 
-## Project Structure
+## Repository Structure
 
 ```text
 .
-├── dataset.py          # SegmentationDataset: image/mask pair loading and preprocessing
+├── README.md           # English project documentation
+├── README.zh-CN.md     # Simplified Chinese project documentation
+├── dataset.py          # Dataset loading and preprocessing
 ├── model.py            # U-Net model definition
 ├── train.py            # Training entrypoint
-├── predict.py          # Single-image mask prediction entrypoint
+├── predict.py          # Single-image inference entrypoint
 ├── picture/
-│   ├── source360/      # 360 sample input images
-│   └── mask360/        # 360 sample binary masks
-├── DATASET.md          # Dataset layout and usage notes
+│   ├── source360/      # Sample input images
+│   └── mask360/        # Sample binary masks
+├── DATASET.md          # Dataset format and usage notes
 ├── requirements.txt    # Python dependencies
-└── LICENSE             # MIT license for source code
+└── LICENSE             # Source code license
 ```
 
 ## Installation
+
+Requirements:
 
 - Python 3.9+
 - PyTorch
@@ -47,21 +53,22 @@ cd pytorch-portrait-segmentation
 pip install -r requirements.txt
 ```
 
-If you need a CUDA-specific PyTorch build, install `torch` and `torchvision` following the official PyTorch command for your CUDA version, then install the remaining dependencies.
+For CUDA-enabled environments, install the appropriate `torch` and `torchvision` builds from the official PyTorch installation instructions, then install the remaining dependencies.
 
 ## Dataset Layout
 
-The training code expects source images and masks to share the same file stem:
+The training pipeline expects source images and masks to be stored in separate directories with matching file stems:
 
 ```text
 picture/source360/example.png
 picture/mask360/example.png
 ```
 
-Supported image suffixes are `.jpg`, `.jpeg`, `.png`, `.bmp`, and `.webp`.
-Masks are loaded as grayscale images and converted to binary tensors during training.
+Supported image suffixes are `.jpg`, `.jpeg`, `.png`, `.bmp`, and `.webp`. Masks are loaded as grayscale images and binarized during training.
 
-## Train
+For additional dataset details, see [DATASET.md](DATASET.md).
+
+## Training
 
 Train with the bundled sample dataset:
 
@@ -69,7 +76,7 @@ Train with the bundled sample dataset:
 python3 train.py --epochs 10 --batch-size 4 --output model.pth
 ```
 
-Use a custom dataset:
+Train with a custom dataset:
 
 ```bash
 python3 train.py \
@@ -88,7 +95,7 @@ The saved checkpoint contains:
 - `image_size`
 - `n_class`
 
-## Predict
+## Inference
 
 After training, generate a binary mask for a single image:
 
@@ -96,26 +103,26 @@ After training, generate a binary mask for a single image:
 python3 predict.py picture/source360/003ff269-1cec-4ec5-8782-a9566afbe05f.png model.pth --output output_mask.png
 ```
 
-Optional flags:
+Optional arguments:
 
 - `--image-size`: override the inference resize size.
-- `--threshold`: foreground threshold, default `0.5`.
+- `--threshold`: foreground probability threshold. The default value is `0.5`.
 
 ## Limitations
 
-- This repository is a compact baseline rather than a production segmentation system.
-- The bundled sample dataset is small, so model quality depends heavily on additional data, annotation quality, augmentation, and training schedule.
-- No pretrained checkpoint is included. Train a model first before running inference.
+- This repository is designed as a compact baseline rather than a production-ready segmentation system.
+- The bundled sample dataset is small; model quality depends on additional data, annotation quality, data augmentation, and training configuration.
+- No pretrained checkpoint is included. Train a model before running inference.
 
 ## Roadmap
 
-- Add train/validation split and metrics such as Dice score and IoU.
+- Add train/validation split support and segmentation metrics such as Dice score and IoU.
 - Add data augmentation for stronger generalization.
-- Add batch inference and alpha-matte foreground extraction.
-- Export to ONNX for deployment.
+- Add batch inference and foreground extraction utilities.
+- Add ONNX export for deployment.
 
 ## License
 
-Source code is released under the MIT License. See [LICENSE](LICENSE).
+The source code is released under the MIT License. See [LICENSE](LICENSE).
 
-Dataset release and reuse notes are documented separately in [DATASET.md](DATASET.md).
+Dataset format and reuse notes are documented in [DATASET.md](DATASET.md).
